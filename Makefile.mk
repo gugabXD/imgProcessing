@@ -1,6 +1,6 @@
 # Makefile para Windows
 
-PROG = quadtree.exe
+PROG = res.exe
 FONTES = main.c quadtree.c lib\SOIL\image_DXT.c lib\SOIL\image_helper.c lib\SOIL\SOIL.c lib\SOIL\stb_image_aug.c
 OBJETOS = $(FONTES:.c=.o)
 CFLAGS = -g -Wall -Iinclude #-g  # Todas as warnings, infos de debug
