@@ -88,8 +88,8 @@ int main(int argc, char** argv) {
     grayButton = (Button){width+10, 60, 100, 40, "Gray", 0};
     flipButton = (Button) {width+10, 110, 100, 40, "Flip", 0};
     mirrorButton = (Button) {width+10, 160, 100, 40, "Mirror", 0};
-    intInputBox = (InputBox) {width+10, 210, 100, 40, "", 0};
-    saveButton = (Button) {width+10, 260, 100, 40, "Save", 0};
+    intInputBox = (InputBox) {width+10, 230, 100, 40, "", 0};
+    saveButton = (Button) {width+10, 280, 100, 40, "Save", 0};
     flipped = 0;
     mirrored = 0;
 
@@ -331,6 +331,8 @@ void handleClick(int button, int state, int x, int y) {
         if (x >= reloadButton.x && x <= reloadButton.x + reloadButton.width &&
             y >= reloadButton.y && y <= reloadButton.y + reloadButton.height) {
             reload();
+            flipped = 0;
+            mirrored = 0;
         }
 
         if (x >= grayButton.x && x <= grayButton.x + grayButton.width &&
@@ -375,6 +377,13 @@ RGBPixel* copyImage(const RGBPixel* source, int width, int height) {
 }
 
 void drawInputBox(InputBox *box) {
+    glColor3f(1.0f, 1.0f, 1.0f);
+    glRasterPos2i(box->x, box->y - 10);
+    char* label = "Quantify:";
+    for (int i = 0; i < strlen(label); i++) {
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, label[i]);
+    }
+
     if (box->isActive) {
         glColor3f(0.8f, 0.8f, 0.8f);
     } else {
