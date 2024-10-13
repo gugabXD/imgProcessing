@@ -40,19 +40,29 @@ typedef struct {
     int isHovered;        // To indicate if the button is hovered
 } Button;
 
-void mouseClick(int button, int state, int x, int y);
+typedef struct {
+    int x, y;            // Position of the input box
+    int width, height;    // Size of the input box
+    char text[4];        // Text to display (input from user)
+    int isActive;         // Whether the input box is active (selected)
+} InputBox;
+
+InputBox intInputBox;
+
+void handleClick(int button, int state, int x, int y);
 void keyboard(unsigned char key, int x, int y);
 RGBPixel* copyImage(const RGBPixel* source, int width, int height);
-
+void drawInputBox(InputBox *box);
+void quantify(int n);
 
 
 // Window and texture variables
-int width, height;
+int width, height, shades;
 GLuint tex, tex2;
 Img pic;
 RGBPixel * imgCopy;
 
-Button reloadButton, grayButton;
+Button reloadButton, grayButton, flipButton, mirrorButton;
 
 int main(int argc, char** argv) {
     glutInit(&argc, argv);
@@ -72,17 +82,20 @@ int main(int argc, char** argv) {
         exit(1);
     }
 
-    width = 2 * pic.width + 10;
+    width = 2 * pic.width + 20;
     height = pic.height + 12;
 
     reloadButton = (Button){width+10, 10, 100, 40, "Reload", 0};
     grayButton = (Button){width+10, 60, 100, 40, "Gray", 0};
+    flipButton = (Button) {width+10, 110, 100, 40, "Flip", 0};
+    mirrorButton = (Button) {width+10, 160, 100, 40, "Mirror", 0};
+    intInputBox = (InputBox) {width+10, 210, 100, 40, "", 0};
 
     glutInitWindowSize(width + 120, height);
     glutCreateWindow("Fundamentos de Processamento de Imagens");
 
     glutDisplayFunc(draw);
-    glutMouseFunc(mouseClick);
+    glutMouseFunc(handleClick);
     glutKeyboardFunc(keyboard);
 
     // Create the texture for the original image
@@ -128,9 +141,12 @@ void draw() {
     glEnd();
     glDisable(GL_TEXTURE_2D);
 
-    // Draw the reload and gray buttons (if needed)
+    // Draw the components
     drawButton(reloadButton);
     drawButton(grayButton);
+    drawButton(flipButton);
+    drawButton(mirrorButton);
+    drawInputBox(&intInputBox);
 
     glutSwapBuffers();
 }
@@ -156,23 +172,39 @@ void gray(){
 }
 
 void reload(){
-    tex2 = SOIL_create_OGL_texture((unsigned char*)imgCopy, pic.width, pic.height, SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
+    pic.img = copyImage(imgCopy, pic.width, pic.height);
+    tex2 = SOIL_create_OGL_texture((unsigned char*)pic.img, pic.width, pic.height, SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
 }
 
 void keyboard(unsigned char key, int x, int y) {
-    if (key == 'r') {
-    reload();
-    glutPostRedisplay();
-}
-    if (key == 'g') {
-        gray();
-        glutPostRedisplay();
+    //Inputting numbers
+    if (intInputBox.isActive) {
+        int len = strlen(intInputBox.text);
+
+        if (key >= '0' && key <= '9' && len < 3) {
+            intInputBox.text[len] = key;
+            intInputBox.text[len + 1] = '\0';
+        }
+
+        if (key == 8 && len > 0) {
+            intInputBox.text[len - 1] = '\0';
+        }
+        if(key==13) {
+            shades = atoi(intInputBox.text);
+            quantify(shades);
+        }
     }
+    
+    
+
+    //Esc to close
     if(key==27) {
         free(pic.img);
         free(imgCopy);
         exit(1);
     }
+
+    glutPostRedisplay();
 }
 
 
@@ -209,13 +241,73 @@ void drawButton(Button btn) {
     }
 }
 
-/*
- * Function to handle mouse clicks
- */
-void mouseClick(int button, int state, int x, int y) {
-    // Print the raw mouse coordinates to verify they're being captured
-    //printf("Mouse click detected at: %d, %d\n", x, y);
-    //printf("x: %d -> %d ; y:%d -> %d\n", reloadButton.x, reloadButton.x+reloadButton.width,reloadButton.y, reloadButton.y+reloadButton.height);
+void flip(){
+    RGBPixel* newImage = (RGBPixel*)malloc(width * height * sizeof(RGBPixel));
+    int w = pic.width;
+    RGBPixel* source = pic.img + pic.height*(w-1);
+    RGBPixel* destination = newImage;
+
+    for (int row = 0; row < pic.height; row++) {
+    RGBPixel *rowFlipped = source - row * w;
+    RGBPixel *rowOriginal = destination + row * w;
+
+    memcpy(rowOriginal, rowFlipped, w * sizeof(RGBPixel));
+    pic.img = newImage;
+    tex2 = SOIL_create_OGL_texture((unsigned char*)pic.img, pic.width, pic.height, SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
+}
+}
+
+void mirror(){
+    RGBPixel* newImage = (RGBPixel*)malloc(width * height * sizeof(RGBPixel));
+    int k = 0;
+    for (int i=0; i<pic.height; i++){
+        for (int j=pic.width-1; j>=0; j--){
+            newImage[k] = pic.img[i*pic.width+j];
+            k++;
+        }
+    }
+    pic.img = newImage;
+    tex2 = SOIL_create_OGL_texture((unsigned char*)pic.img, pic.width, pic.height, SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
+}
+
+void quantify(int n){
+    gray(); //confirm it's gray
+    int t1 = 255, t2 = 0, t_orig;
+    RGBPixel* pixel;
+
+    for (int i=0; i<pic.height; i++){
+        for(int j=0; j<pic.width; j++){
+            pixel = &pic.img[i*pic.width+j];
+            t_orig = pixel->r; //values of r, g and b refer to the luminance
+            if(t_orig<t1) t1 = t_orig;
+            if(t_orig>t2) t2 = t_orig;
+        }
+    }
+
+    float tam_int = t2-t1+1.0;
+
+    if(n<tam_int){
+        float tb = tam_int/n;
+        int bucket;
+        int shade;
+        for (int i=0; i<pic.height; i++){
+            for(int j=0; j<pic.width; j++){
+                pixel = &pic.img[i*pic.width+j];
+                t_orig = pixel->r;
+                bucket = (int)((t_orig+0.5)/tb); //knowing which bucket it falls into
+                shade = (int)(t1-0.5+((2*bucket+1)*tb)/2); //integer value at the center of the bucket
+
+                pixel->r = shade;
+                pixel->g = shade;
+                pixel->b = shade;
+            }
+        }
+    }
+    tex2 = SOIL_create_OGL_texture((unsigned char*)pic.img, pic.width, pic.height, SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
+}
+
+//Handling mouse clicks
+void handleClick(int button, int state, int x, int y) {
     if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
 
         if (x >= reloadButton.x && x <= reloadButton.x + reloadButton.width &&
@@ -227,6 +319,20 @@ void mouseClick(int button, int state, int x, int y) {
             y >= grayButton.y && y <= grayButton.y + grayButton.height) {
             gray();
         }
+        if (x >= flipButton.x && x <= flipButton.x + flipButton.width &&
+            y >= flipButton.y && y <= flipButton.y + flipButton.height) {
+            flip();
+        }
+        if (x >= mirrorButton.x && x <= mirrorButton.x + mirrorButton.width &&
+            y >= mirrorButton.y && y <= mirrorButton.y + mirrorButton.height) {
+            mirror();
+        }
+        if (x >= intInputBox.x && x <= intInputBox.x + intInputBox.width &&
+            y >= intInputBox.y && y <= intInputBox.y + intInputBox.height) {
+            intInputBox.isActive = 1;
+        } else {
+            intInputBox.isActive = 0;
+        }
     }
     glutPostRedisplay();
 }
@@ -235,7 +341,7 @@ RGBPixel* copyImage(const RGBPixel* source, int width, int height) {
     RGBPixel* newImage = (RGBPixel*)malloc(width * height * sizeof(RGBPixel));
     if (!newImage) {
         printf("Failed to allocate memory for image copy.\n");
-        return NULL;  // Indicate failure
+        return NULL;
     }
 
     for (int i = 0; i < height; i++) {
@@ -244,4 +350,31 @@ RGBPixel* copyImage(const RGBPixel* source, int width, int height) {
         }
     }
     return newImage;
+}
+
+void drawInputBox(InputBox *box) {
+    if (box->isActive) {
+        glColor3f(0.8f, 0.8f, 0.8f);
+    } else {
+        glColor3f(0.7f, 0.7f, 0.7f);
+    }
+
+    glBegin(GL_QUADS);
+    glVertex2i(box->x, box->y);
+    glVertex2i(box->x + box->width, box->y);
+    glVertex2i(box->x + box->width, box->y + box->height);
+    glVertex2i(box->x, box->y + box->height);
+    glEnd();
+
+    glColor3f(1.0f, 1.0f, 1.0f);
+    glRasterPos2i(box->x + 5, box->y + 25);
+    for (int i = 0; i < strlen(box->text); i++) {
+        glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, box->text[i]);
+    }
+
+    int textWidth = strlen(box->text) * 10;
+        glBegin(GL_LINES);
+        glVertex2i(box->x + 5 + textWidth, box->y + 5);
+        glVertex2i(box->x + 5 + textWidth, box->y + box->height - 5);
+        glEnd();
 }
