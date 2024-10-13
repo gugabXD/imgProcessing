@@ -9,7 +9,7 @@
             "type": "cppdbg",
             "request": "launch",
             "program": "${workspaceFolder}/res.exe",
-            "args": ["cheryl.png"],
+            "args": ["Underwater_53k.jpg"],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],

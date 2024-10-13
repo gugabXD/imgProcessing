@@ -16,7 +16,7 @@
 #include <GL/glut.h>
 #endif
 
-#include "include/SOIL.h"
+#include "include/SOIL2.h"
 
 void init();
 void draw();
@@ -54,13 +54,14 @@ void keyboard(unsigned char key, int x, int y);
 RGBPixel* copyImage(const RGBPixel* source, int width, int height);
 void drawInputBox(InputBox *box);
 void quantify(int n);
+void saveImage(const char* filename);
 
-int width, height, shades;
+int width, height, shades, flipped, mirrored;
 GLuint tex, tex2;
 Img pic;
 RGBPixel * imgCopy;
 
-Button reloadButton, grayButton, flipButton, mirrorButton;
+Button reloadButton, grayButton, flipButton, mirrorButton, saveButton;
 
 int main(int argc, char** argv) {
     glutInit(&argc, argv);
@@ -88,6 +89,9 @@ int main(int argc, char** argv) {
     flipButton = (Button) {width+10, 110, 100, 40, "Flip", 0};
     mirrorButton = (Button) {width+10, 160, 100, 40, "Mirror", 0};
     intInputBox = (InputBox) {width+10, 210, 100, 40, "", 0};
+    saveButton = (Button) {width+10, 260, 100, 40, "Save", 0};
+    flipped = 0;
+    mirrored = 0;
 
     glutInitWindowSize(width + 120, height);
     glutCreateWindow("Fundamentos de Processamento de Imagens");
@@ -97,10 +101,10 @@ int main(int argc, char** argv) {
     glutKeyboardFunc(keyboard);
 
     // Create the texture for the original image
-    tex = SOIL_create_OGL_texture((unsigned char*)imgCopy, pic.width, pic.height, SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
+    tex = SOIL_create_OGL_texture((unsigned char*)imgCopy, &pic.width, &pic.height, SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
 
     // Create the texture for the second image (original image)
-    tex2 = SOIL_create_OGL_texture((unsigned char*)pic.img, pic.width, pic.height, SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
+    tex2 = SOIL_create_OGL_texture((unsigned char*)pic.img, &pic.width, &pic.height, SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
 
     printf("Image: %d x %d (%d)\n", pic.width, pic.height, chan);
 
@@ -145,6 +149,7 @@ void draw() {
     drawButton(flipButton);
     drawButton(mirrorButton);
     drawInputBox(&intInputBox);
+    drawButton(saveButton);
 
     glutSwapBuffers();
 }
@@ -166,13 +171,13 @@ void gray(){
             }
         }
 
-        tex2 = SOIL_create_OGL_texture((unsigned char*)pic.img, pic.width, pic.height, SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
+        tex2 = SOIL_create_OGL_texture((unsigned char*)pic.img, &pic.width, &pic.height, SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
 }
 
 void reload(){
     free(pic.img);
     pic.img = copyImage(imgCopy, pic.width, pic.height);
-    tex2 = SOIL_create_OGL_texture((unsigned char*)pic.img, pic.width, pic.height, SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
+    tex2 = SOIL_create_OGL_texture((unsigned char*)pic.img, &pic.width, &pic.height, SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
 }
 
 void keyboard(unsigned char key, int x, int y) {
@@ -241,6 +246,7 @@ void drawButton(Button btn) {
 }
 
 void flip() {
+    flipped = !flipped;
     RGBPixel* newImage = (RGBPixel*)malloc(pic.width * pic.height * sizeof(RGBPixel));
 
     int w = pic.width;
@@ -255,10 +261,11 @@ void flip() {
 
     pic.img = newImage;
 
-    tex2 = SOIL_create_OGL_texture((unsigned char*)pic.img, pic.width, pic.height, SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
+    tex2 = SOIL_create_OGL_texture((unsigned char*)pic.img, &pic.width, &pic.height, SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
 }
 
 void mirror(){
+    mirrored = !mirrored;
     RGBPixel* newImage = (RGBPixel*)malloc(width * height * sizeof(RGBPixel));
     int k = 0;
     for (int i=0; i<pic.height; i++){
@@ -269,11 +276,19 @@ void mirror(){
     }
     free(pic.img);
     pic.img = newImage;
-    tex2 = SOIL_create_OGL_texture((unsigned char*)pic.img, pic.width, pic.height, SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
+    tex2 = SOIL_create_OGL_texture((unsigned char*)pic.img, &pic.width, &pic.height, SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
 }
 
 void quantify(int n){
     reload(); //shades of the original image
+    if(flipped) {
+        flip();
+        flipped = !flipped;
+    }
+    if(mirrored) {
+        mirror();
+        mirrored = !mirrored; // to keep the same status as "mirrored" or "flipped"
+    }
     gray(); //confirm it's gray
     int t1 = 255, t2 = 0, t_orig;
     RGBPixel* pixel;
@@ -306,7 +321,7 @@ void quantify(int n){
             }
         }
     }
-    tex2 = SOIL_create_OGL_texture((unsigned char*)pic.img, pic.width, pic.height, SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
+    tex2 = SOIL_create_OGL_texture((unsigned char*)pic.img, &pic.width, &pic.height, SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
 }
 
 //Handling mouse clicks
@@ -335,6 +350,10 @@ void handleClick(int button, int state, int x, int y) {
             intInputBox.isActive = 1;
         } else {
             intInputBox.isActive = 0;
+        }
+        if (x >= saveButton.x && x <= saveButton.x + saveButton.width &&
+            y >= saveButton.y && y <= saveButton.y + saveButton.height) {
+            saveImage("output/output.jpg");
         }
     }
     glutPostRedisplay();
@@ -380,4 +399,8 @@ void drawInputBox(InputBox *box) {
         glVertex2i(box->x + 5 + textWidth, box->y + 5);
         glVertex2i(box->x + 5 + textWidth, box->y + box->height - 5);
         glEnd();
+}
+
+void saveImage(const char* filename) {
+    SOIL_save_image(filename, SOIL_SAVE_TYPE_PNG, pic.width, pic.height, 3, (const unsigned char*)pic.img);
 }
