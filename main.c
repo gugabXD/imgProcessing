@@ -172,6 +172,7 @@ void gray(){
 }
 
 void reload(){
+    free(pic.img);
     pic.img = copyImage(imgCopy, pic.width, pic.height);
     tex2 = SOIL_create_OGL_texture((unsigned char*)pic.img, pic.width, pic.height, SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
 }
@@ -241,20 +242,22 @@ void drawButton(Button btn) {
     }
 }
 
-void flip(){
-    RGBPixel* newImage = (RGBPixel*)malloc(width * height * sizeof(RGBPixel));
+void flip() {
+    RGBPixel* newImage = (RGBPixel*)malloc(pic.width * pic.height * sizeof(RGBPixel));
+
     int w = pic.width;
-    RGBPixel* source = pic.img + pic.height*(w-1);
-    RGBPixel* destination = newImage;
+    int h = pic.height;
 
-    for (int row = 0; row < pic.height; row++) {
-    RGBPixel *rowFlipped = source - row * w;
-    RGBPixel *rowOriginal = destination + row * w;
+    for (int row = 0; row < h; row++) {
+        RGBPixel* rowOriginal = pic.img + row * w;
+        RGBPixel* rowFlipped = newImage + (h - row - 1) * w;
+        memcpy(rowFlipped, rowOriginal, w * sizeof(RGBPixel));
+    }
+    free(pic.img);
 
-    memcpy(rowOriginal, rowFlipped, w * sizeof(RGBPixel));
     pic.img = newImage;
+
     tex2 = SOIL_create_OGL_texture((unsigned char*)pic.img, pic.width, pic.height, SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
-}
 }
 
 void mirror(){
@@ -266,6 +269,7 @@ void mirror(){
             k++;
         }
     }
+    free(pic.img);
     pic.img = newImage;
     tex2 = SOIL_create_OGL_texture((unsigned char*)pic.img, pic.width, pic.height, SOIL_LOAD_RGB, SOIL_CREATE_NEW_ID, 0);
 }
