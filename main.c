@@ -34,17 +34,17 @@ typedef struct {
 } Img;
 
 typedef struct {
-    int x, y;            // Button position
-    int width, height;    // Button size
-    char label[20];       // Button label
-    int isHovered;        // To indicate if the button is hovered
+    int x, y;
+    int width, height;
+    char label[20];
+    int isHovered;
 } Button;
 
 typedef struct {
-    int x, y;            // Position of the input box
-    int width, height;    // Size of the input box
-    char text[4];        // Text to display (input from user)
-    int isActive;         // Whether the input box is active (selected)
+    int x, y;
+    int width, height;
+    char text[4];        // display
+    int isActive;         // selected
 } InputBox;
 
 InputBox intInputBox;
@@ -55,8 +55,6 @@ RGBPixel* copyImage(const RGBPixel* source, int width, int height);
 void drawInputBox(InputBox *box);
 void quantify(int n);
 
-
-// Window and texture variables
 int width, height, shades;
 GLuint tex, tex2;
 Img pic;
@@ -275,6 +273,7 @@ void mirror(){
 }
 
 void quantify(int n){
+    reload(); //shades of the original image
     gray(); //confirm it's gray
     int t1 = 255, t2 = 0, t_orig;
     RGBPixel* pixel;
