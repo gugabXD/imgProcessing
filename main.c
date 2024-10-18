@@ -84,6 +84,10 @@ int main(int argc, char** argv) {
     width = 2 * pic.width + 20;
     height = pic.height + 12;
 
+    if (height < 330) {
+        height = 330;
+    }
+
     reloadButton = (Button){width+10, 10, 100, 40, "Reload", 0};
     grayButton = (Button){width+10, 60, 100, 40, "Gray", 0};
     flipButton = (Button) {width+10, 110, 100, 40, "Flip", 0};
