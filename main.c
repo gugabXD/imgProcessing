@@ -415,5 +415,5 @@ void drawInputBox(InputBox *box) {
 }
 
 void saveImage(const char* filename) {
-    SOIL_save_image(filename, SOIL_SAVE_TYPE_PNG, pic.width, pic.height, 3, (const unsigned char*)pic.img);
+    SOIL_save_image(filename, SOIL_SAVE_TYPE_JPG, pic.width, pic.height, 3, (const unsigned char*)pic.img);
 }
