@@ -1,0 +1,15 @@
+{
+  "name": "C++ Dev Container",
+  "dockerFile": "Dockerfile",
+  "settings": {
+    "terminal.integrated.shell.linux": "/bin/bash",
+    "editor.formatOnSave": true
+  },
+  "extensions": [
+    "ms-vscode.cpptools",
+    "ms-vscode.cmake-tools",
+    "ms-vscode.vscode-typescript-next"
+  ],
+  "postCreateCommand": "cmake .",
+  "remoteUser": "vscode"
+}
