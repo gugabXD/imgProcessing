@@ -1,9 +1,9 @@
 # Makefile para Linux e macOS
 
 PROG = res
-FONTES = main.c lib\SOIL2\image_DXT.c lib\SOIL2\image_helper.c lib\SOIL2\SOIL2.c lib\SOIL2\wfETC.c
+FONTES = main.c lib/SOIL2/image_DXT.c lib/SOIL2/image_helper.c lib/SOIL2/SOIL2.c lib/SOIL2/wfETC.c
 OBJETOS = $(FONTES:.c=.o)
-CFLAGS = -g -DGL_SILENCE_DEPRECATION # -Wall -g  # Todas as warnings, infos de debug
+CFLAGS = -g -DGL_SILENCE_DEPRECATION -m64 -O3# -Wall -g  # Todas as warnings, infos de debug
 LDFLAGS =  -lm
 
 UNAME = `uname`
